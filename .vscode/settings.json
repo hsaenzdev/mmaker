@@ -1,6 +1,4 @@
 {
   "python.analysis.typeCheckingMode": "basic",
-  "cSpell.words": [
-    "bitso"
-  ]
+  "cSpell.words": ["bitso", "ccxt", "ohlcv", "websockets"]
 }

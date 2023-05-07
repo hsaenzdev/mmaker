@@ -4,7 +4,7 @@ https://docs.bitso.com/bitso-api/docs/list-available-books
 """
 
 from typing import List, TypedDict, cast
-from bitso.api.bitso_request import make_bitso_request
+from bitso.api.request import make_bitso_request
 
 
 class FlatRate(TypedDict):

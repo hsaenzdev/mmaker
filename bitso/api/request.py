@@ -10,6 +10,7 @@ from bitso.api.constants import BITSO_API_URL, API_REQUEST_TIMEOUT
 
 def handle_api_error(message="Unknown"):
     """handle api error"""
+    print("Error captured:")
     print(message)
 
 
