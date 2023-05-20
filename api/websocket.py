@@ -15,25 +15,34 @@ class OrderBookPayload(TypedDict):
     asks: List[List[str]]
 
 
+class KlinePayload(TypedDict):
+    OpenPrice: str
+    ClosePrice: str
+    HightPrice: str
+    LowPrice: str
+
+
+EventType = Literal["trade", "kline", "depthUpdate"]
+
+
 class ThreadedWebsocket:
     """https://python-binance.readthedocs.io/en/latest/websockets.html"""
 
     symbol: str
     websocket: ThreadedWebsocketManager
 
-    # Message events
     on_trade: Callable[[TradePayload], None] | None = None
     on_order: Callable[[OrderBookPayload], None] | None = None
-    on_kline: Callable | None = None
+    on_kline: Callable[[KlinePayload], None] | None = None
 
     def __init__(self, symbol: str) -> None:
         self.symbol = symbol
 
-    def initiate_websocket(self):
         self.websocket = ThreadedWebsocketManager(
             api_key=API_KEY, api_secret=API_SECRET_KEY
         )
 
+    def initiate_websocket(self) -> None:
         self.websocket.start()
 
         self.websocket.start_kline_socket(
@@ -52,20 +61,18 @@ class ThreadedWebsocket:
 
         self.websocket.join()
 
-    def restart_websocket(self):
+    def restart_websocket(self) -> None:
         """Restarts the websocket connection"""
-        time.sleep(1)
-
         try:
             self.websocket.stop()
         except:
             pass
 
+        time.sleep(15)
+
         self.initiate_websocket()
 
-    def handle_message(
-        self, message, event_type: Literal["trade", "kline", "depthUpdate"]
-    ) -> bool:
+    def handle_message(self, message, event_type: EventType) -> bool:
         if "e" not in message:
             return False
 
@@ -75,14 +82,11 @@ class ThreadedWebsocket:
 
         return message["e"] == event_type
 
-    def handle_depth_socket(self, message):
+    def handle_depth_socket(self, message) -> None:
         if self.on_order is None:
             return
 
         if self.handle_message(message, "depthUpdate") is False:
-            return
-
-        if len(message["b"]) == 0 and len(message["a"]) == 0:
             return
 
         self.on_order(
@@ -92,7 +96,7 @@ class ThreadedWebsocket:
             }
         )
 
-    def handle_trade_socket(self, message):
+    def handle_trade_socket(self, message) -> None:
         if self.on_trade is None:
             return
 
@@ -107,9 +111,18 @@ class ThreadedWebsocket:
             }
         )
 
-    def handle_kline_socket(self, message):
+    def handle_kline_socket(self, message) -> None:
         if self.on_kline is None:
             return
 
         if self.handle_message(message, "kline") is False:
             return
+
+        self.on_kline(
+            {
+                "OpenPrice": message["k"]["o"],
+                "ClosePrice": message["k"]["c"],
+                "HightPrice": message["k"]["h"],
+                "LowPrice": message["k"]["l"],
+            }
+        )
