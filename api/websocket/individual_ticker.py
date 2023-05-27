@@ -1,7 +1,5 @@
 from typing import Callable, TypedDict, List, Literal
-import time
-from binance import ThreadedWebsocketManager, Client
-from constants import API_KEY, API_SECRET_KEY
+from api.websocket.tws import tws
 
 
 class TradePayload(TypedDict):
@@ -25,11 +23,11 @@ class KlinePayload(TypedDict):
 EventType = Literal["trade", "kline", "depthUpdate"]
 
 
-class ThreadedWebsocket:
+class IndividualTicker:
     """https://python-binance.readthedocs.io/en/latest/websockets.html"""
 
     symbol: str
-    websocket: ThreadedWebsocketManager
+    # websocket: ThreadedWebsocketManager
 
     on_trade: Callable[[TradePayload], None] | None = None
     on_order: Callable[[OrderBookPayload], None] | None = None
@@ -38,46 +36,20 @@ class ThreadedWebsocket:
     def __init__(self, symbol: str) -> None:
         self.symbol = symbol
 
-        self.websocket = ThreadedWebsocketManager(
-            api_key=API_KEY, api_secret=API_SECRET_KEY
+        print(tws.test_var)
+        tws.test_var = "VAR002 - ALV"
+
+    def initiate_depth(self, symbol) -> None:
+        tws.websocket.start_depth_socket(
+            symbol=symbol, callback=self.handle_depth_socket
         )
-
-    def initiate_websocket(self) -> None:
-        self.websocket.start()
-
-        self.websocket.start_kline_socket(
-            callback=self.handle_kline_socket,
-            symbol=self.symbol,
-            interval=Client.KLINE_INTERVAL_15MINUTE,
-        )
-
-        self.websocket.start_trade_socket(
-            symbol=self.symbol, callback=self.handle_trade_socket
-        )
-
-        self.websocket.start_depth_socket(
-            symbol=self.symbol, callback=self.handle_depth_socket
-        )
-
-        self.websocket.join()
-
-    def restart_websocket(self) -> None:
-        """Restarts the websocket connection"""
-        try:
-            self.websocket.stop()
-        except:
-            pass
-
-        time.sleep(15)
-
-        self.initiate_websocket()
 
     def handle_message(self, message, event_type: EventType) -> bool:
         if "e" not in message:
             return False
 
         if message["e"] == "error":
-            self.restart_websocket()
+            tws.restart_websocket()
             return False
 
         return message["e"] == event_type

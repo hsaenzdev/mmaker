@@ -1,12 +1,32 @@
-from api.websocket import ThreadedWebsocket
+import time
+from api.websocket.individual_ticker import IndividualTicker
 
 
-tws = ThreadedWebsocket(symbol="BTCUSDT")
+def main():
+    individual_ticker_process("BTCUSDT")
 
-tws.on_trade = lambda price: print("ON_TRADE | trade price:", price["price"])
+    time.sleep(10)
 
-tws.on_order = lambda depth: print("ON_ORDER | best bid", depth["bids"][0])
+    print("next tick")
+    individual_ticker_process("XRPUSDT")
 
-tws.on_kline = lambda candle: print("ON_KLINE | Closed Price", candle["ClosePrice"])
+    while True:
+        print("this keep running")
+        time.sleep(60)
 
-tws.initiate_websocket()
+
+def individual_ticker_process(symbol: str):
+    ist = IndividualTicker(symbol=symbol)
+
+    ist.on_order = lambda order: print(
+        order["asks"][0] if len(order["asks"]) > 0 else 0
+    )
+
+    ist.initiate_depth(symbol)
+
+    time.sleep(5)
+    ist.initiate_depth(symbol)
+
+
+if __name__ == "__main__":
+    main()
